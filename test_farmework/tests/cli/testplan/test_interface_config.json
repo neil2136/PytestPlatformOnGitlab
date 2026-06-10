@@ -1,0 +1,16 @@
+{
+   "cli_test_case_01":{
+      "steps" : "1. 建立 SSH 连接到防火墙\n2. 执行 'show version' 命令\n3. 验证输出包含 SonicWall 设备信息\n4. 附加 CLI 输出到 Allure 报告\n5. 如果连接失败则跳过测试",
+      "initial" : "防火墙已启动，SSH 服务已启用，网络连接正常",
+      "id" : "cli_test_case_01",
+      "title" : "测试 SSH 连接",
+      "result" : "成功建立 SSH 连接，获取到防火墙版本信息，确认为 SonicWall 设备"
+   },
+   "cli_test_case_02":{
+      "steps" : "1. 建立 SSH 连接到防火墙\n2. 进入配置模式 (configure terminal)\n3. 选择 X2 接口 (interface X2)\n4. 设置 IP 分配为 DMZ 静态模式 (ip-assignment DMZ static)\n5. 配置 IP 地址 (ip 12.12.1.168)\n6. 提交配置 (commit)\n7. 退出配置模式 (end, exit)\n8. 验证 IP 配置命令执行成功\n9. 附加配置命令输出到 Allure 报告",
+      "initial" : "SSH 连接已建立，防火墙处于可配置状态",
+      "id" : "cli_test_case_02",
+      "title" : "通过 CLI 配置 X2 接口 IP",
+      "result" : "X2 接口 IP 配置成功，IP 地址设置为 12.12.1.168，区域设置为 DMZ"
+   }
+}

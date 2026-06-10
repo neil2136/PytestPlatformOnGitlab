@@ -1,0 +1,16 @@
+{
+   "api_test_case_01":{
+      "steps" : "1. 初始化 SonicOSAPI 客户端\n2. 发送 POST 请求配置 X2 接口 IPv4 设置\n3. 验证 API 响应状态码为 200\n4. 验证响应中的 success 状态\n5. 验证 CLI 配置状态\n6. 验证信息消息\n7. 附加响应到 Allure 报告",
+      "initial" : "防火墙已启动，API 访问已启用，X2 接口处于默认状态",
+      "id" : "api_test_case_01",
+      "title" : "配置 X2 接口",
+      "result" : "X2 接口配置成功，IP 地址设置为 12.12.1.100，子网掩码 255.255.255.0，区域设置为 DMZ"
+   },
+   "api_test_case_02":{
+      "steps" : "1. 初始化 SonicOSAPI 客户端\n2. 发送 GET 请求获取 X2 接口配置\n3. 验证 API 响应状态码为 200\n4. 验证接口配置信息\n5. 验证 IP 分配设置\n6. 验证静态 IP 配置\n7. 附加响应到 Allure 报告",
+      "initial" : "X2 接口已通过 API 配置完成",
+      "id" : "api_test_case_02",
+      "title" : "验证 X2 接口配置",
+      "result" : "成功获取 X2 接口配置，验证 IP 地址为 12.12.1.100，子网掩码为 255.255.255.0，区域为 DMZ"
+   }
+}

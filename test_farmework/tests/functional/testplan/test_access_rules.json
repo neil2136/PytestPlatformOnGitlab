@@ -1,0 +1,16 @@
+{
+   "functional_test_case_01":{
+      "steps" : "1. 查询现有 ACL 规则列表\n2. 检查是否已存在名为 'auto_rules_01' 的 ACL\n3. 如果存在则跳过测试\n4. 发送 POST 请求添加新的 ACL 规则\n5. 验证 API 响应状态和成功状态\n6. 检查是否有待处理配置并提交\n7. 等待配置生效\n8. 验证 ACL 是否真正创建成功\n9. 记录当前 ACL 列表进行确认",
+      "initial" : "防火墙已启动，API 访问已启用，无同名 ACL 规则存在",
+      "id" : "functional_test_case_01",
+      "title" : "通过 API 添加防火墙 ACL 规则",
+      "result" : "ACL 规则 'auto_rules_01' 创建成功，允许从 LAN 到 WAN 的访问，配置已生效"
+   },
+   "functional_test_case_02":{
+      "steps" : "1. 从环境变量获取 LAN 和 WAN 主机配置\n2. 建立 SSH 连接到 LAN 主机\n3. 从 LAN 主机执行 ping 命令测试到 WAN 主机的连通性\n4. 分析 ping 输出结果\n5. 附加测试结果到 Allure 报告\n6. 验证 ACL 规则是否允许预期的网络流量",
+      "initial" : "ACL 规则已创建，LAN 和 WAN 主机网络可达",
+      "id" : "functional_test_case_02",
+      "title" : "验证 ACL 规则生效性",
+      "result" : "从 LAN 主机成功 ping 通 WAN 主机，验证 ACL 规则生效，网络连通性正常"
+   }
+}
