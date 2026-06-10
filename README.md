@@ -2,11 +2,9 @@
 
 ## 1. 项目概述
     这是一个完整的自动化测试框架，为防火墙设备提供了全面的测试解决方案，支持从API到UI的全方位测试，并通过CI/CD实现了自动化的测试流程。框架采用模块化设计，便于扩展和维护，是企业级防火墙测试的理想选择。
-    <img width="1250" height="992" alt="image" src="https://github.com/user-attachments/assets/3dc9ff14-62cc-456d-a670-f79a60f464ef" />
-
-    <img width="1253" height="997" alt="image" src="https://github.com/user-attachments/assets/f133d710-8526-4164-9d27-b1982f42af85" />
-    <img width="1255" height="996" alt="image" src="https://github.com/user-attachments/assets/e8d0716d-968a-4076-bd14-d25538098332" />
-
+<img width="1250" height="992" alt="gitlab projects" src="https://github.com/user-attachments/assets/f58d2659-964c-46c1-88b4-e7f2bc231b34" />
+<img width="1253" height="997" alt="image" src="https://github.com/user-attachments/assets/f133d710-8526-4164-9d27-b1982f42af85" />
+<img width="1255" height="996" alt="image" src="https://github.com/user-attachments/assets/e8d0716d-968a-4076-bd14-d25538098332" />
 
 <img width="1430" height="980" alt="Image" src="https://github.com/user-attachments/assets/965ada29-85b2-400a-a292-8179632075f0" />
 ### 1.1 设计目标与实施现状
