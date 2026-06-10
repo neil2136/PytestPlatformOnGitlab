@@ -1,0 +1,211 @@
+stages:
+  - setup
+  - topology
+  - deploy
+  - test
+  - report
+  - sendmail
+  - cleanup
+
+# ===================== 新增：多物理拓扑资源池（企业级分支绑定） =====================
+.topology_config:
+  variables:
+    # 默认开发拓扑（所有分支兜底）
+    TOPO_DEV_HOST: "10.103.50.112"
+    TOPO_DEV_SSH_PWD: "sonicauto"
+    # 测试分支专属拓扑
+    TOPO_TEST_HOST: "10.103.50.113"
+    TOPO_TEST_SSH_PWD: "sonicauto"
+    # 预发布分支专属拓扑
+    TOPO_RELEASE_HOST: "10.103.50.114"
+    TOPO_RELEASE_SSH_PWD: "sonicauto"
+
+variables:
+  # 全局变量默认占位，由前置任务动态覆盖
+  REMOTE_HOST: ""
+  REMOTE_SSH_PASSWORD: ""
+  REMOTE_USER: "root"
+  REMOTE_PROJECT_PATH: "/opt/test_framework"
+  REMOTE_REPORT_PATH: "/opt/test_framework/reports"
+  REMOTE_VENV_PATH: "/test_framework/.venv"
+  LOCAL_REPORT_DIR: "/ci/reports"
+  GITLAB_USER: "root"
+  GITLAB_PASSWORD: "SHpass12!"
+  GIT_REPO_URL: 'http://root:SHpass12!@10.8.106.150/root/test_framework.git'
+  
+  # pytest参数
+  PYTEST_ARGS: '-v --html=reports/html/test_report.html --self-contained-html --junitxml=reports/junit/test-results.xml --alluredir=reports/allure --cov=src --cov-report=html:reports/coverage'
+
+# ===================== 新增前置任务：自动分支匹配拓扑（默认dev） =====================
+auto_match_topo:
+  stage: .pre
+  extends: .topology_config
+  script:
+    - echo "===== 自动分支绑定物理拓扑 ====="
+    - echo "当前分支：$CI_COMMIT_BRANCH"
+    - |
+      # 分支匹配规则: test/release专属拓扑, 其余所有分支默认dev拓扑
+      if [[ $CI_COMMIT_BRANCH == "test" ]]; then
+        export CURRENT_TOPO_NAME="topo-test"
+        export DYN_HOST=$TOPO_TEST_HOST
+        export DYN_PWD=$TOPO_TEST_SSH_PWD
+      elif [[ $CI_COMMIT_BRANCH == "release" ]]; then
+        export CURRENT_TOPO_NAME="topo-release"
+        export DYN_HOST=$TOPO_RELEASE_HOST
+        export DYN_PWD=$TOPO_RELEASE_SSH_PWD
+      else
+        export CURRENT_TOPO_NAME="topo-dev"
+        export DYN_HOST=$TOPO_DEV_HOST
+        export DYN_PWD=$TOPO_DEV_SSH_PWD
+      fi
+    # 动态覆盖全局连接变量，适配原有所有任务
+    - echo "REMOTE_HOST=$DYN_HOST" >> topo.env
+    - echo "REMOTE_SSH_PASSWORD=$DYN_PWD" >> topo.env
+    - echo "CURRENT_TOPO_NAME=$CURRENT_TOPO_NAME" >> topo.env
+    - echo "✅ 分支[$CI_COMMIT_BRANCH] 自动绑定拓扑：$CURRENT_TOPO_NAME 设备：$DYN_HOST"
+  artifacts:
+    reports:
+      dotenv: topo.env
+  tags:
+    - shell
+
+
+# 测试所有设备的SSH连接
+setup_ssh:
+  stage: setup
+  needs: [auto_match_topo]
+  script:
+    - echo "Testing SSH connection to remote server..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${REMOTE_USER}@${REMOTE_HOST} "echo SSH connection successful"
+  tags:
+    - shell
+
+# 建立firewall测试拓扑网络
+setup_topology:
+  stage: topology
+  needs: [setup_ssh]
+  script:
+    - echo "setup firewall test topology..."
+  tags:
+    - shell
+
+# 克隆代码到远程服务器
+clone_code:
+  stage: deploy
+  needs: [setup_topology]
+  resource_group: $CURRENT_TOPO_NAME
+  script:
+    - echo "Deploying code to remote server..."
+    - echo "Cleaning old code directory..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "rm -rf /opt/test_framework"
+    - echo "Creating new directory..."
+    - echo "Cloning repository..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "cd /opt && git clone $GIT_REPO_URL"
+    - echo "Verifying clone..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "ls -la /opt/test_framework"
+    - echo "Code clone completed"
+  tags:
+    - shell
+
+# 在远程服务器上执行pytest测试
+run_remote_tests:
+  stage: test
+  needs: [clone_code]
+  resource_group: $CURRENT_TOPO_NAME
+  script:
+    - echo "等待远程代码就绪（最多30秒）..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -tt -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "cd /opt/test_framework; for i in {1..30}; do if [ -d tests ]; then echo 'tests/ 已就绪'; break; fi; echo 'tests/ 还未就绪，等待中...'; sleep 1; done; ls -la"
+
+    - echo "检查pytest执行环境..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -tt -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "cd /opt/test_framework; source /test_framework/.venv/bin/activate; python3 --version; pytest --version; pwd; rm -rf reports/html/* reports/allure/* reports/coverage/*; mkdir -p reports/html reports/allure reports/coverage"
+
+    - echo "Running pytest on remote server..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -tt -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "cd /opt/test_framework; source /test_framework/.venv/bin/activate; pytest tests/ -v --html=reports/html/test_report.html --self-contained-html --junitxml=reports/junit/test-results.xml --alluredir=reports/allure --cov=src --cov-report=html:reports/coverage"
+
+    - echo "Remote test execution completed"
+  tags:
+    - shell
+  artifacts:
+    when: always
+    paths:
+      - reports/
+    expire_in: 1 week
+
+
+# 从远程服务器收集测试报告
+collect_reports:
+  stage: report
+  needs: [run_remote_tests]
+  resource_group: $CURRENT_TOPO_NAME
+  script:
+    - echo "=== 开始从[$CURRENT_TOPO_NAME] 远程服务器收集测试报告 ==="
+    - report_name="report_${CURRENT_TOPO_NAME}_$(date '+%Y%m%d%H%M%S')"
+    - REPORT_DIR="/ci/reports/${report_name}"
+    - mkdir -p "${REPORT_DIR}"
+    - echo "目标目录：${REPORT_DIR}"
+    - sshpass -p "${REMOTE_SSH_PASSWORD}" scp -o StrictHostKeyChecking=no -r "${REMOTE_USER}@${REMOTE_HOST}:/opt/test_framework/reports/"* "${REPORT_DIR}/"
+    - echo "=== 报告拷贝完成 ==="
+    - ls -lh "${REPORT_DIR}"
+    - pwd
+    - echo "${report_name}" > /tmp/report_name.txt
+
+    - echo "=== 提取本次报告的json文件 ==="
+    - mkdir -p /ci/auto-test-results/projects/fw-report/results/
+    - rm -f /ci/auto-test-results/projects/fw-report/results/*.json
+    - cp -f "${REPORT_DIR}/allure/"*.json /ci/auto-test-results/projects/fw-report/results/
+    - echo "JSON文件复制到results目录完成"
+
+    - echo "=== 生成allure报告 ==="
+    - curl -v --fail --request GET --url "http://10.8.106.150:5050/allure-docker-service/generate-report?project_id=fw-report&execution_type=gitlab&execution_name=GitlabCI"
+    
+  tags:
+    - shell
+  artifacts:
+    when: always
+    paths:
+      - ./reports/
+      - /tmp/report_name.txt
+    expire_in: 1 week
+    reports:
+      junit: ./reports/report_*/junit/test-results.xml
+  allow_failure: false
+
+# 发送测试报告
+send_mail:
+  stage: sendmail
+  needs: [collect_reports]
+  script:
+    - echo "Sending test report email..."
+    - mkdir -p /tmp/ci_mail_reports
+    - echo "=== 获取本次执行的测试报告 ==="
+    - report_name=$(cat /tmp/report_name.txt)
+    - html_report_path="/ci/reports/${report_name}/html/test_report.html"
+    - echo "报告路径：${html_report_path}"
+    - echo "=== 【${CURRENT_TOPO_NAME}】开始email 发送本次执行的测试报告 ==="
+    # - python3 /ci/scripts/send_mail.py --report_path "${html_report_path}"
+  tags:
+    - shell
+  artifacts:
+    when: always
+    paths:
+      - ./sendmail/
+    expire_in: 1 week
+
+# 清理远程服务器上的代码目录
+cleanup:
+  stage: cleanup
+  needs: [send_mail]
+  script:
+    - echo "Cleaning up [$CURRENT_TOPO_NAME] remote server..."
+    - echo "Removing test_framework directory from /opt..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "rm -rf /opt/test_framework"
+    - echo "Verifying cleanup..."
+    - sshpass -p "$REMOTE_SSH_PASSWORD" ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "ls -la /opt/ | grep test_framework || echo 'test_framework directory successfully removed'"
+    - echo "Cleanup completed"
+  tags:
+    - shell
+  when: always
+  allow_failure: true
+
+
+  
