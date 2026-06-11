@@ -18,7 +18,7 @@ from datetime import datetime
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.163.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))
 SMTP_USER = os.getenv("SMTP_USER", "horace365@163.com")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "RUb6VAaUniMyvg8C")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "xxxxxxxx")
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
 
 MAIL_FROM = os.getenv("MAIL_FROM", "horace365@163.com")
