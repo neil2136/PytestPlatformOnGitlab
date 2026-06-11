@@ -12,13 +12,13 @@ stages:
   variables:
     # 默认开发拓扑（所有分支兜底）
     TOPO_DEV_HOST: "10.103.50.112"
-    TOPO_DEV_SSH_PWD: "sonicauto"
+    TOPO_DEV_SSH_PWD: "xxxxxxxx"
     # 测试分支专属拓扑
     TOPO_TEST_HOST: "10.103.50.113"
-    TOPO_TEST_SSH_PWD: "sonicauto"
+    TOPO_TEST_SSH_PWD: "xxxxxxxx"
     # 预发布分支专属拓扑
     TOPO_RELEASE_HOST: "10.103.50.114"
-    TOPO_RELEASE_SSH_PWD: "sonicauto"
+    TOPO_RELEASE_SSH_PWD: "xxxxxxxx"
 
 variables:
   # 全局变量默认占位，由前置任务动态覆盖
@@ -30,7 +30,7 @@ variables:
   REMOTE_VENV_PATH: "/test_framework/.venv"
   LOCAL_REPORT_DIR: "/ci/reports"
   GITLAB_USER: "root"
-  GITLAB_PASSWORD: "SHpass12!"
+  GITLAB_PASSWORD: "xxxxxxxx"
   GIT_REPO_URL: 'http://root:SHpass12!@10.8.106.150/root/test_framework.git'
   
   # pytest参数
